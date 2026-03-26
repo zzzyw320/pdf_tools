@@ -11,6 +11,11 @@ This software currently provides five main functions:
 - PDF to JPG
 
 Everyone is welcome to use it.  
+
+You can download the Simplified Chinese version of the soft ware through the provided below:
+
+https://pan.baidu.com/s/1FL3U8HRLb-1Pvqtki1wo9A?pwd=8qv2
+
 If you have any suggestions for improvement, please feel free to contact me at:
 
 **353959580@qq.com**
