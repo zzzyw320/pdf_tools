@@ -19,17 +19,21 @@ from PySide6.QtCore import Qt, QSize, QCoreApplication
 from PySide6.QtGui import QPixmap, QImage, QIcon
 
 from pypdf import PdfReader, PdfWriter
+from translations import TEXTS
 
 
 class ProcessWindow(QWidget):
-    def __init__(self, pdf_path):
+    def __init__(self, pdf_path, lang="zh"):
         super().__init__()
+        self.lang = lang
+        self.texts = TEXTS[self.lang]
+
         self.pdf_path = pdf_path
         self.pdf_name = os.path.basename(pdf_path)
         self.pdf_base_name = os.path.splitext(self.pdf_name)[0]
         self.page_count = self.get_pdf_page_count(pdf_path)
 
-        self.setWindowTitle("处理 PDF")
+        self.setWindowTitle(self.texts["process_window_title"])
         self.resize(980, 820)
 
         self.init_ui()
@@ -40,7 +44,11 @@ class ProcessWindow(QWidget):
             reader = PdfReader(pdf_path)
             return len(reader.pages)
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"读取 PDF 页数失败：\n{e}")
+            QMessageBox.critical(
+                self,
+                self.texts["error"],
+                f"{self.texts['read_pdf_failed']}\n{e}"
+            )
             return 0
 
     def render_pdf_page_thumbnail(self, page_index, zoom=0.18):
@@ -70,16 +78,19 @@ class ProcessWindow(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(15)
 
-        # 顶部信息
-        self.file_label = QLabel(f"当前文件：{self.pdf_name}    （共 {self.page_count} 页）")
+        self.file_label = QLabel(
+            self.texts["current_file_info"].format(
+                filename=self.pdf_name,
+                page_count=self.page_count
+            )
+        )
         self.file_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         main_layout.addWidget(self.file_label)
 
-        self.tip_label = QLabel("先选中左侧页面，再用右侧按钮调整顺序或删除页面")
+        self.tip_label = QLabel(self.texts["process_tip"])
         self.tip_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         main_layout.addWidget(self.tip_label)
 
-        # 中间区域：左侧缩略图列表 + 右侧操作按钮
         center_layout = QHBoxLayout()
         center_layout.setSpacing(15)
 
@@ -101,24 +112,24 @@ class ProcessWindow(QWidget):
         right_button_layout = QVBoxLayout()
         right_button_layout.setSpacing(12)
 
-        self.move_top_button = QPushButton("⏫")
-        self.move_top_button.setFixedSize(90, 45)
+        self.move_top_button = QPushButton(self.texts["move_first"])
+        self.move_top_button.setFixedSize(110, 45)
         self.move_top_button.clicked.connect(self.move_selected_to_top)
 
-        self.move_up_button = QPushButton("↑")
-        self.move_up_button.setFixedSize(90, 45)
+        self.move_up_button = QPushButton(self.texts["move_up"])
+        self.move_up_button.setFixedSize(110, 45)
         self.move_up_button.clicked.connect(self.move_selected_up)
 
-        self.delete_button = QPushButton("删除此页")
-        self.delete_button.setFixedSize(90, 45)
+        self.delete_button = QPushButton(self.texts["delete_current_page"])
+        self.delete_button.setFixedSize(110, 45)
         self.delete_button.clicked.connect(self.delete_current_page)
 
-        self.move_down_button = QPushButton("↓")
-        self.move_down_button.setFixedSize(90, 45)
+        self.move_down_button = QPushButton(self.texts["move_down"])
+        self.move_down_button.setFixedSize(110, 45)
         self.move_down_button.clicked.connect(self.move_selected_down)
 
-        self.move_bottom_button = QPushButton("⏬")
-        self.move_bottom_button.setFixedSize(90, 45)
+        self.move_bottom_button = QPushButton(self.texts["move_last"])
+        self.move_bottom_button.setFixedSize(110, 45)
         self.move_bottom_button.clicked.connect(self.move_selected_to_bottom)
 
         right_button_layout.addWidget(self.move_top_button)
@@ -131,15 +142,14 @@ class ProcessWindow(QWidget):
         center_layout.addLayout(right_button_layout)
         main_layout.addLayout(center_layout)
 
-        # 底部按钮
         bottom_layout = QHBoxLayout()
         bottom_layout.setSpacing(20)
 
-        self.finish_button = QPushButton("完成")
+        self.finish_button = QPushButton(self.texts["finish"])
         self.finish_button.setFixedHeight(45)
         self.finish_button.clicked.connect(self.finish_process)
 
-        self.cancel_button = QPushButton("取消")
+        self.cancel_button = QPushButton(self.texts["cancel"])
         self.cancel_button.setFixedHeight(45)
         self.cancel_button.clicked.connect(self.close)
 
@@ -150,7 +160,6 @@ class ProcessWindow(QWidget):
 
         self.setLayout(main_layout)
 
-        # 样式
         self.setStyleSheet("""
             QWidget {
                 font-size: 16px;
@@ -186,7 +195,6 @@ class ProcessWindow(QWidget):
             }
         """)
 
-        # 初始化时先更新一次按钮状态
         self.update_action_buttons()
 
     def load_page_thumbnails(self):
@@ -209,17 +217,28 @@ class ProcessWindow(QWidget):
 
             item.setData(Qt.UserRole, page_number)
             self.page_list_widget.addItem(item)
+
             QCoreApplication.processEvents()
 
         self.refresh_item_labels()
         self.update_action_buttons()
 
+    def refresh_item_labels(self):
+        for i in range(self.page_list_widget.count()):
+            item = self.page_list_widget.item(i)
+            original_page_number = item.data(Qt.UserRole)
+            current_position = i + 1
+            item.setText(
+                self.texts["process_position_label"].format(
+                    position=current_position,
+                    original_page=original_page_number
+                )
+            )
+
     def update_action_buttons(self):
-        """根据当前选中项的位置，更新右侧操作按钮状态"""
         count = self.page_list_widget.count()
         current_row = self.page_list_widget.currentRow()
 
-        # 没有页面 or 没有选中项
         if count == 0 or current_row < 0:
             self.move_top_button.setEnabled(False)
             self.move_up_button.setEnabled(False)
@@ -228,31 +247,24 @@ class ProcessWindow(QWidget):
             self.move_bottom_button.setEnabled(False)
             return
 
-        # 删除按钮只要有选中项就可用
         self.delete_button.setEnabled(True)
 
-        # 第一页时不能再往上
         is_first = (current_row == 0)
         self.move_top_button.setEnabled(not is_first)
         self.move_up_button.setEnabled(not is_first)
 
-        # 最后一页时不能再往下
         is_last = (current_row == count - 1)
         self.move_down_button.setEnabled(not is_last)
         self.move_bottom_button.setEnabled(not is_last)
 
-    def refresh_item_labels(self):
-        """根据当前位置刷新每个条目的显示文字"""
-        for i in range(self.page_list_widget.count()):
-            item = self.page_list_widget.item(i)
-            original_page_number = item.data(Qt.UserRole)
-            current_position = i + 1
-            item.setText(f"第{current_position}位（原第{original_page_number}页）")
-
     def take_current_item(self):
         current_row = self.page_list_widget.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "提示", "请先选中一个页面。")
+            QMessageBox.warning(
+                self,
+                self.texts["tip"],
+                self.texts["select_page_first"]
+            )
             return None, None
         item = self.page_list_widget.takeItem(current_row)
         return current_row, item
@@ -300,7 +312,11 @@ class ProcessWindow(QWidget):
         current_row = self.page_list_widget.currentRow()
 
         if current_row < 0:
-            QMessageBox.warning(self, "提示", "请先选中一个要删除的页面。")
+            QMessageBox.warning(
+                self,
+                self.texts["tip"],
+                self.texts["select_page_delete"]
+            )
             return
 
         item = self.page_list_widget.item(current_row)
@@ -308,8 +324,8 @@ class ProcessWindow(QWidget):
 
         reply = QMessageBox.question(
             self,
-            "确认删除",
-            f"确定要删除当前选中的页面吗？\n\n原始页码：第 {page_number} 页",
+            self.texts["confirm_delete"],
+            self.texts["delete_page_confirm"].format(page_number=page_number),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
@@ -356,12 +372,16 @@ class ProcessWindow(QWidget):
         page_order = self.get_current_page_order()
 
         if not page_order:
-            QMessageBox.warning(self, "提示", "当前没有可处理的页面。")
+            QMessageBox.warning(
+                self,
+                self.texts["tip"],
+                self.texts["no_pages_process"]
+            )
             return
 
         output_path, _ = QFileDialog.getSaveFileName(
             self,
-            "选择处理后的输出位置",
+            self.texts["choose_process_output"],
             f"{self.pdf_base_name}_processed.pdf",
             "PDF Files (*.pdf)"
         )
@@ -372,7 +392,10 @@ class ProcessWindow(QWidget):
         if not output_path.lower().endswith(".pdf"):
             output_path += ".pdf"
 
-        progress = self.show_busy_progress("处理中", "正在按新顺序生成 PDF，请稍候...")
+        progress = self.show_busy_progress(
+            self.texts["process_progress_title"],
+            self.texts["process_progress_text"]
+        )
 
         try:
             self.export_reordered_pdf(page_order, output_path)
@@ -380,13 +403,13 @@ class ProcessWindow(QWidget):
 
             QMessageBox.information(
                 self,
-                "处理成功",
-                f"PDF 处理完成！\n\n输出文件：\n{output_path}"
+                self.texts["success"],
+                self.texts["process_success"].format(output_path=output_path)
             )
         except Exception as e:
             progress.close()
             QMessageBox.critical(
                 self,
-                "错误",
-                f"PDF 处理失败：\n{e}"
+                self.texts["error"],
+                f"{self.texts['process_fail']}\n{e}"
             )
