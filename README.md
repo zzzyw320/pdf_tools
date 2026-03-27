@@ -15,6 +15,7 @@ Everyone is welcome to use it.
 You can download the soft ware through the provided below:
 
 [https://pan.baidu.com/s/1FL3U8HRLb-1Pvqtki1wo9A?pwd=8qv2](https://pan.baidu.com/s/1zsquPTYltK8jZei8xm1lhw?pwd=q34m)
+https://1drv.ms/u/c/7e3ddc694629911c/IQDFQciETpYgSoHQvNK-n01mAVio38rmijLIigJl_OiNPek?e=RmaXgb
 
 
 If you have any suggestions for improvement, please feel free to contact me at:
