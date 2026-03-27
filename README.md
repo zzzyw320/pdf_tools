@@ -12,7 +12,7 @@ This software currently provides five main functions:
 
 Everyone is welcome to use it.  
 
-You can download the soft ware through the provided below:
+You can download this tool through the provided below:
 
 [https://pan.baidu.com/s/1FL3U8HRLb-1Pvqtki1wo9A?pwd=8qv2](https://pan.baidu.com/s/1zsquPTYltK8jZei8xm1lhw?pwd=q34m)
 
